@@ -1,22 +1,16 @@
-#See https://aka.ms/containerfastmode to understand how Visual Studio uses this Dockerfile to build your images for faster debugging.
+FROM mcr.microsoft.com/dotnet/core/sdk:3.1-alpine3.10 AS runtime
 
-FROM mcr.microsoft.com/dotnet/core/aspnet:3.1-buster-slim AS base
+ENV ASPNETCORE_URLS http://+:5000
+EXPOSE 5000
+
+ADD ./secrets /secrets
 WORKDIR /app
-EXPOSE 80
-EXPOSE 443
+COPY out/ ./
 
-FROM mcr.microsoft.com/dotnet/core/sdk:3.1-buster AS build
-WORKDIR /src
-COPY ["AuctionHouse.SnapshotService/AuctionHouse.SnapshotService.csproj", "AuctionHouse.SnapshotService/"]
-RUN dotnet restore "AuctionHouse.SnapshotService/AuctionHouse.SnapshotService.csproj"
-COPY . .
-WORKDIR "/src/AuctionHouse.SnapshotService"
-RUN dotnet build "AuctionHouse.SnapshotService.csproj" -c Release -o /app/build
 
-FROM build AS publish
-RUN dotnet publish "AuctionHouse.SnapshotService.csproj" -c Release -o /app/publish
+# RUN addgroup snapshot-service -g 2000
+# RUN adduser -D -u 2000 snapshot-service -G snapshot-service
 
-FROM base AS final
-WORKDIR /app
-COPY --from=publish /app/publish .
+# USER 2000
+
 ENTRYPOINT ["dotnet", "AuctionHouse.SnapshotService.dll"]
